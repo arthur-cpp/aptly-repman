@@ -1,0 +1,48 @@
+server {
+    listen 80;
+    server_name repo.site;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name repo.site;
+
+    root /aptly/public;
+    index index.php index.html;
+
+    ssl_certificate /etc/nginx/ssl/repo.site.pem;
+    ssl_certificate_key /etc/nginx/ssl/repo.site.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;
+    ssl_prefer_server_ciphers on;
+
+    access_log /var/log/nginx/repo.repo.site.access.log;
+    error_log /var/log/nginx/repo.repo.site.error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+    location /check/ {
+        try_files $uri $uri/ /check/index.php?$args;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+    }
+
+    location ~ ^/(dists|pool)/ {
+        # keep synchronized with allowed.php
+        allow 127.0.0.1;
+        deny all;
+        
+        autoindex on;
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ /\. {
+        deny all;
+    }
+}
