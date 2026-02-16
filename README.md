@@ -104,3 +104,11 @@ bash ~/aptly/scripts/wipe-all.sh
 * Публичный ключ доступен по адресу `https://repo.site/public.key`.
 * Проверить текущий статус доступа можно через `https://repo.site/check/`.
 * Основная директория данных: `/aptly`. Все изменения конфигурации Aptly вносятся в `~/.aptly.conf`.
+
+## Настройка Cloudflare
+
+Зайти в настройки домена и оттуда:
+
+1. Caching -> Cache rules -> добавить правило выключения кеширования (Bypass cache) для `https://repo.site/dists/*`
+2. Security -> Settings -> Block AI bots - выключить
+3. Еще можно добавить правило пропуска IP в секции Security -> Security rules.
