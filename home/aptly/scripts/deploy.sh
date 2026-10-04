@@ -6,6 +6,9 @@ set -e
 # Проходит по папкам в ~/aptly/debs/, импортирует пакеты и обновляет публикации.
 # ==============================================================================
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/dists.sh"
+
 ROOT_DEBS_PATH="$HOME/aptly/debs"
 
 # Проверка наличия корневой директории
@@ -24,7 +27,7 @@ for DIST_DIR in "$ROOT_DEBS_PATH"/*/; do
     
     # Проверяем, есть ли файлы для обработки (.deb, .dsc, .tar.gz)
     # Это предотвращает создание пустых снэпшотов
-    FILES_TO_PROCESS=$(find "$DIST_DIR" -maxdepth 1 -type f \( -name "*.deb" -o -name "*.dsc" -o -name "*.tar.gz" \))
+    FILES_TO_PROCESS=$(find "$DIST_DIR" -maxdepth 1 -type f \( -name "*.deb" -o -name "*.ddeb" -o -name "*.dsc" -o -name "*.tar.*" \))
     
     if [ -z "$FILES_TO_PROCESS" ]; then
         # Просто тихо пропускаем пустые папки
@@ -37,31 +40,12 @@ for DIST_DIR in "$ROOT_DEBS_PATH"/*/; do
 
     REPO_NAME="$DIST_NAME"
 
-    # Маппинг имен папок в кодовые имена (Codenames)
-    case "$DIST_NAME" in
-        "debian11")
-            CODENAMES=("debian11" "bullseye")
-            ;;
-        "debian12")
-            CODENAMES=("debian12" "bookworm")
-            ;;
-        "debian13")
-            CODENAMES=("debian13" "trixie")
-            ;;
-        "ubuntu20.04")
-            CODENAMES=("ubuntu20.04" "focal")
-            ;;
-        "ubuntu22.04")
-            CODENAMES=("ubuntu22.04" "jammy")
-            ;;
-        "ubuntu24.04")
-            CODENAMES=("ubuntu24.04" "noble")
-            ;;
-        *)
-            echo "Предупреждение: Папка '$DIST_NAME' не описана в скрипте. Пропускаю."
-            continue
-            ;;
-    esac
+    # Маппинг имени папки в кодовые имена (Codenames) — см. scripts/lib/dists.sh
+    if ! CODENAMES_STR=$(codenames_for "$DIST_NAME"); then
+        echo "Предупреждение: Папка '$DIST_NAME' не описана в scripts/lib/dists.sh. Пропускаю."
+        continue
+    fi
+    read -r -a CODENAMES <<< "$CODENAMES_STR"
 
     TIMESTAMP=$(date +%Y%m%d-%H%M)
     SNAP_NAME="snap-$REPO_NAME-$TIMESTAMP"
